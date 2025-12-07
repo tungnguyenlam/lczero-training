@@ -1,31 +1,33 @@
 %YAML 1.2
 --- 
-name: "8x256-256"
+name: "4x128-cpu"
 gpu: 0
 dataset:
   num_chunks: 500_000_000
   allow_less_chunks: true
   train_ratio: 0.95
   sort_type: name
-  input_train: 
-    - '/mnt/t82data/training-run1-test80-202309*/'
-  input_test:
-    - '/mnt/testdata/*/'
+  input: 
+    - '/Volumes/HP_P900/Users/tungnguyen/Programming/chessformer/lczero-training/data/train/*/'
+  # input_train: 
+  #   - '/Volumes/HP_P900/Users/tungnguyen/Programming/chessformer/lczero-training/data/train/*/'
+  # input_test:
+  #   - '/Volumes/HP_P900/Users/tungnguyen/Programming/chessformer/lczero-training/data/test/*/'
   # input_validation:
   # #  - '/mnt/data/validation-rescored/'
-  train_workers: 8
-  test_workers: 4
+  train_workers: 2
+  test_workers: 1
   fast_chunk_loading: false
   # pc_min: 0
   # pc_max: 6
 training:
-    precision: half 
+    precision: single    # single precision (float32) for CPU/MPS compatibility
     swa: false
     swa_output: false  
     swa_max_n: 10
     swa_steps: 100
     max_grad_norm: 10.0
-    batch_size: 1024
+    batch_size: 256     # reduced for lower RAM
     num_batch_splits: 1
     value_focus_min: 1.0
     value_focus_slope: 0.0
@@ -38,20 +40,20 @@ training:
     checkpoint_activations: false
 
     # validation_steps: 5000
-    num_test_positions: 131_072
-    train_avg_report_steps: 1_000
-    total_steps: 3_000_000
-    checkpoint_steps: 100_000
-    shuffle_size: 2_000_000
-    warmup_steps: 1000
+    num_test_positions: 8_192
+    train_avg_report_steps: 100
+    total_steps: 10_000       # reduced for testing
+    checkpoint_steps: 1_000
+    shuffle_size: 100_000     # reduced for lower RAM
+    warmup_steps: 100
     mask_legal_moves: true
     lr_values: 
         - 0.001
         - 0.000316
         - 0.0001
     lr_boundaries:
-        - 2_400_000
-        - 2_700_000
+        - 8_000
+        - 9_000
     loss_weights:
         policy: 1.0
         policy_optimistic_st: 0.0
@@ -67,7 +69,6 @@ training:
         value_st_cat: 0.1
         moves_left: 1.0
         reg: 1.0
-        future: 0.1
     path: 'networks'
 
     optimizer: nadam # sgd/nadam/rmsprop/adabelief/adam
@@ -81,18 +82,17 @@ training:
 
 model:
 
-    # Dimension parameters
-    embedding_size: 256
-    policy_embedding_size: 256
+    # Dimension parameters (reduced for CPU/low RAM)
+    embedding_size: 128
+    policy_embedding_size: 128
     value_embedding_size: 32
     moves_left_embedding_size: 32
-    encoder_layers: 8                   # number of intermediate attention layers in the policy head
-    encoder_heads: 8                    # number of attention heads in encoder layers, emb // (32 or 64) recommended
-                                         # with 64 memory is same as embedding, with 32 is double
-    encoder_d_model: 256                 # size of the Q, K, & V vectors in encoder layers -- divisible by encoder_heads
-    encoder_dff: 256                    # size of the expansion layer in encoder layer ffn
-    policy_d_model: 256                  # size of the query and key vectors in final attention layer
-    policy_d_aux: 256                     # size of the query and key vectors for auxiliary layers
+    encoder_layers: 4                    # reduced from 8
+    encoder_heads: 4                     # reduced from 8
+    encoder_d_model: 128                 # reduced from 256
+    encoder_dff: 128                     # reduced from 256
+    policy_d_model: 128                  # reduced from 256
+    policy_d_aux: 128                    # reduced from 256
     dropout_rate: 0.0                    # the dropout rate used for weight regularization of attention during training
                                         # makes memory 33 -> 39 GB on A100 as observed by Teck and Kovax
 

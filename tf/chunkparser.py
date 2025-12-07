@@ -530,6 +530,9 @@ class ChunkParserInner:
                     if thresh_p < 1.0 and random.random() > thresh_p:
                         continue
         
+            # Pad record to V7 size if it's shorter (V5 or V6 format)
+            if len(record) < v7_struct.size:
+                record = record + b"\x00" * (v7_struct.size - len(record))
 
             record += b"".join(probs[idx + 1: idx + 1 + n_future_probs])
             boards = white_boards if idx % 2 == 0 else black_boards

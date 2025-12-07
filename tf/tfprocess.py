@@ -631,11 +631,16 @@ class TFProcess:
         else:
             gpus = tf.config.experimental.list_physical_devices('GPU')
             print(gpus)
-            tf.config.experimental.set_visible_devices(gpus[self.cfg['gpu']],
-                                                       'GPU')
-            tf.config.experimental.set_memory_growth(gpus[self.cfg['gpu']],
-                                                     True)
-            self.strategy = None
+            if len(gpus) == 0:
+                # No GPUs found, fall back to CPU
+                print("No GPUs found, running on CPU")
+                self.strategy = None
+            else:
+                tf.config.experimental.set_visible_devices(gpus[self.cfg['gpu']],
+                                                           'GPU')
+                tf.config.experimental.set_memory_growth(gpus[self.cfg['gpu']],
+                                                         True)
+                self.strategy = None
         if self.model_dtype == tf.float16:
             tf.keras.mixed_precision.set_global_policy('mixed_float16')
 
@@ -1493,7 +1498,7 @@ class TFProcess:
         # Run training for this batch
         grads = None
         for batch_id in range(batch_splits):
-            x, y, z, q, m, st_q, opp_idx, next_idx = next(self.train_iter)
+            x, y, z, q, m, st_q, opp_idx, next_idx, _ = next(self.train_iter)
             if self.strategy is not None:
                 metrics, new_grads = self.strategy_process_inner_loop(
                     x, y, z, q, m, st_q, opp_idx, next_idx)
@@ -1818,7 +1823,7 @@ class TFProcess:
         for metric in self.test_metrics:
             metric.reset()
         for _ in range(0, test_batches):
-            x, y, z, q, m, st_q, opp_idx, next_idx = next(self.test_iter)
+            x, y, z, q, m, st_q, opp_idx, next_idx, _ = next(self.test_iter)
             if self.strategy is not None:
                 metrics = self.strategy_calculate_test_summaries_inner_loop(
                     x, y, z, q, m, st_q, opp_idx, next_idx)
@@ -1879,7 +1884,7 @@ class TFProcess:
         print("logging test validations")
         for metric in self.test_metrics:
             metric.reset()
-        for (x, y, z, q, m, st_q, opp_idx, next_idx) in self.validation_dataset:
+        for (x, y, z, q, m, st_q, opp_idx, next_idx, _) in self.validation_dataset:
             if self.strategy is not None:
                 metrics = self.strategy_calculate_test_summaries_inner_loop(
                     x, y, z, q, m, st_q, opp_idx, next_idx)
