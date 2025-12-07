@@ -479,6 +479,9 @@ class Net:
             if 'renorm' in name:
                 # Batch renorm has extra weights, but we don't know what to do with them.
                 continue
+            if '/rpe_' in name or name.startswith('rpe_'):
+                # RPE (Relative Position Encoding) weights are not supported in Leela protobuf format.
+                continue
             if has_renorm:
                 if 'variance:' in weights_name:
                     # Renorm has variance, but it is not the primary source of truth.
