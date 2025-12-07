@@ -1660,12 +1660,13 @@ class TFProcess:
                 swa_path = path + "-swa-" + str(evaled_steps)
                 self.net.pb.training_params.training_steps = evaled_steps
 
-                backup = self.read_weights()
-                for (swa, w) in zip(self.swa_weights, self.model.weights):
-                    w.assign(swa.read_value())
-                tf.saved_model.save(self.model, swa_path)
-                for (old, w) in zip(backup, self.model.weights):
-                    w.assign(old)
+                if self.swa_enabled:
+                    backup = self.read_weights()
+                    for (swa, w) in zip(self.swa_weights, self.model.weights):
+                        w.assign(swa.read_value())
+                    tf.saved_model.save(self.model, swa_path)
+                    for (old, w) in zip(backup, self.model.weights):
+                        w.assign(old)
 
 
 
